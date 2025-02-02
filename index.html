@@ -8,21 +8,32 @@
 </head>
 <body>
     <h1>Uzbek Text to Speech</h1>
-    <textarea id="inputText" placeholder="Yozmoqchi bo'lgan matningizni kiriting..."></textarea><br>
+    <textarea id="inputText" placeholder="Yazmoqchi bo'lgan matningizni kiriting..."></textarea><br>
     <button id="convertBtn">Konvertatsiya qilish</button><br>
     <audio id="audioPlayer" controls></audio>
 
     <script>
+        // Handle button click to send text to backend
         $("#convertBtn").click(function() {
             var text = $("#inputText").val();
             if (text) {
-                $.post("/convert", { text: text }, function(data) {
-                    if (data.success) {
-                        var audio = document.getElementById("audioPlayer");
-                        audio.src = data.audioUrl;
-                        audio.play();
-                    } else {
-                        alert("Xato yuz berdi!");
+                // Send a POST request to /convert with the entered text
+                $.ajax({
+                    url: "/convert",
+                    type: "POST",
+                    data: JSON.stringify({ text: text }),
+                    contentType: "application/json",
+                    success: function(data) {
+                        if (data.success) {
+                            var audio = document.getElementById("audioPlayer");
+                            audio.src = data.audioUrl;
+                            audio.play();
+                        } else {
+                            alert("Xato yuz berdi: " + (data.message || "No audio generated"));
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Serverga ulanishda xato: " + error);
                     }
                 });
             } else {
