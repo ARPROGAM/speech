@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text-to-Speech</title>
+</head>
+<body>
+  <h1>Text-to-Speech in Uzbek</h1>
+  <textarea id="text-input" placeholder="Type here..." rows="5" cols="40"></textarea>
+  <button id="play-btn">Play Speech</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.getElementById('play-btn').addEventListener('click', async () => {
+      const text = document.getElementById('text-input').value;
+
+      // Replace with your API details
+      const userId = 'DpSX7VY5QgQuoyjfn8UBm0jWhay2';
+      const apiKey = '9de455714707441a99966ee18dbe493c';
+
+      // PlayHT API request
+      const response = await axios.post('https://play.ht/api/v1/stream', {
+        userId,
+        apiKey,
+        text,
+        language: 'uzbek', // Specify Uzbek language
+        voiceEngine: 'PlayDialog'
+      });
+
+      const audioStream = new Audio(URL.createObjectURL(response.data));
+      audioStream.play();
+    });
+  </script>
+</body>
+</html>
