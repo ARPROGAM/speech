@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Uzbek Text-to-Speech</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        textarea { width: 90%; height: 150px; margin-bottom: 10px; padding: 5px;}
+        button, select { padding: 10px; margin-right: 5px;}
+	#output {
+			margin-top:10px;
+		}
+    </style>
+</head>
+<body>
+    <h1>Simple Uzbek Text-to-Speech</h1>
+	<p>This is a simple text-to-speech webpage with Uzbek Language, without sign up or sign in. It uses browser's built in SpeechSynthesis API</p>
+
+    <label for="voices">Select Voice:</label>
+    <select id="voices"></select>
+    <br><br>
+    <textarea id="textInput" placeholder="Type Uzbek text here..."></textarea>
+    <br>
+
+    <button id="speakButton">Speak</button>
+	<button id="pauseButton">Pause</button>
+    <button id="resumeButton">Resume</button>
+    <button id="cancelButton">Cancel</button>
+    <p id="output"></p>
+    <audio id="audioOutput" controls></audio>
+
+    <script>
+
+		 const outputMessage = document.getElementById("output")
+        const voicesDropdown = document.getElementById('voices');
+        const textInput = document.getElementById('textInput');
+        const speakButton = document.getElementById('speakButton');
+		const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const audioOutput = document.getElementById('audioOutput');
+
+         let speechSynthesisUtterance = null;
+
+		function populateVoices(){
+			const voices = speechSynthesis.getVoices();
+            voicesDropdown.innerHTML = '';
+			voices.forEach(voice => {
+				 if(voice.lang == 'uz-UZ'){
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voicesDropdown.appendChild(option);
+				 }
+                });
+		}
+
+        if ('speechSynthesis' in window) {
+			populateVoices();
+
+			speechSynthesis.onvoiceschanged = ()=>{
+				populateVoices();
+			}
+
+            speakButton.addEventListener('click', () => {
+			     outputMessage.innerHTML = ""
+                const text = textInput.value.trim();
+                if (text === '') {
+					outputMessage.innerHTML = "Please enter some text."
+                    return;
+                }
+				const selectedVoiceName = voicesDropdown.value;
+				const selectedVoice = speechSynthesis.getVoices().find(voice => voice.name === selectedVoiceName)
+
+                if(!selectedVoice){
+					 outputMessage.innerHTML = "No voice selected"
+                    return;
+				}
+
+
+                speechSynthesisUtterance = new SpeechSynthesisUtterance(text);
+				speechSynthesisUtterance.voice = selectedVoice;
+                speechSynthesis.speak(speechSynthesisUtterance);
+
+				speechSynthesisUtterance.onstart = () => {
+					console.log("start")
+					outputMessage.innerHTML = "Speaking..."
+				};
+
+
+				speechSynthesisUtterance.onend = () => {
+					console.log("end")
+					outputMessage.innerHTML = "Stopped Speaking"
+				};
+
+				speechSynthesisUtterance.onerror = (event)=>{
+					outputMessage.innerHTML = "Error, please try again"
+					console.error("Error",event)
+				}
+
+            });
+
+			pauseButton.addEventListener('click', ()=>{
+				if(speechSynthesis.speaking)
+					speechSynthesis.pause();
+				else
+					outputMessage.innerHTML ="Not speaking"
+			})
+
+			resumeButton.addEventListener('click', ()=>{
+				if(speechSynthesis.paused)
+					speechSynthesis.resume();
+				else
+					outputMessage.innerHTML ="Not paused"
+
+			})
+
+			cancelButton.addEventListener('click', ()=>{
+				if(speechSynthesis.speaking || speechSynthesis.paused)
+					speechSynthesis.cancel();
+				else
+					outputMessage.innerHTML ="Not speaking"
+			})
+
+
+        } else {
+			 outputMessage.innerHTML = "Your browser does not support the SpeechSynthesis API";
+        }
+    </script>
+</body>
+</html>
