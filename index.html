@@ -1,45 +1,125 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uzbek Text to Speech</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O'zbek Matn-ni Ovoza Aylantirish</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 50px;
+      background-color: #f4f4f4;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005f73;
+    }
+  </style>
 </head>
 <body>
-    <h1>Uzbek Text to Speech</h1>
-    <textarea id="inputText" placeholder="Yazmoqchi bo'lgan matningizni kiriting..."></textarea><br>
-    <button id="convertBtn">Konvertatsiya qilish</button><br>
-    <audio id="audioPlayer" controls></audio>
+  <h1>O'zbek Matnni Ovoza Aylantirish</h1>
+  <p>Pastga matn kiriting va "Ovoza" tugmachasini bosing:</p>
+  <textarea id="text-input" placeholder="Bu yerga matn yozing..."></textarea><br>
+  <button onclick="speakText()">Ovoza</button>
 
-    <script>
-        // Handle button click to send text to backend
-        $("#convertBtn").click(function() {
-            var text = $("#inputText").val();
-            if (text) {
-                // Send a POST request to /convert with the entered text
-                $.ajax({
-                    url: "/convert",
-                    type: "POST",
-                    data: JSON.stringify({ text: text }),
-                    contentType: "application/json",
-                    success: function(data) {
-                        if (data.success) {
-                            var audio = document.getElementById("audioPlayer");
-                            audio.src = data.audioUrl;
-                            audio.play();
-                        } else {
-                            alert("Xato yuz berdi: " + (data.message || "No audio generated"));
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        alert("Serverga ulanishda xato: " + error);
-                    }
-                });
-            } else {
-                alert("Iltimos, matn kiriting.");
-            }
+  <script>
+    // Your PlayHT credentials
+    const userId = "DpSX7VY5QgQuoyjfn8UBm0jWhay2";
+    const apiKey = "9de455714707441a99966ee18dbe493c";
+    const convertUrl = "https://api.play.ht/api/v1/convert";
+
+    async function speakText() {
+      const text = document.getElementById("text-input").value;
+      if (text.trim() === "") {
+        alert("Iltimos, matn kiriting!");
+        return;
+      }
+      
+      // Adjust the voice parameter as per your PlayHT account configuration.
+      const requestData = {
+        text: text,
+        voice: "uz-UZ-Standard-A", // Try updating this if needed, e.g., "uzbek_female"
+        quality: "high",
+        format: "mp3",
+        speed: 1.0
+      };
+      
+      try {
+        const response = await fetch(convertUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+            "X-User-ID": userId
+          },
+          body: JSON.stringify(requestData)
         });
-    </script>
+        
+        const data = await response.json();
+        console.log("Convert response:", data);
+        
+        if (data.audioUrl) {
+          // API returned audioUrl directly
+          playAudio(data.audioUrl);
+        } else if (data.jobId) {
+          // Poll for the job to complete
+          const audioUrl = await pollJob(data.jobId);
+          playAudio(audioUrl);
+        } else {
+          throw new Error("No audioUrl or jobId returned. Full response: " + JSON.stringify(data));
+        }
+      } catch (error) {
+        console.error("Error generating speech:", error);
+        alert("Xatolik yuz berdi. Iltimos, API kalitingiz, voice ID va sozlamalarni tekshiring.\n\n" + error.message);
+      }
+    }
+    
+    // Poll the job status until audio is ready
+    async function pollJob(jobId) {
+      const jobUrl = `https://api.play.ht/api/v1/job/${jobId}`;
+      const headers = {
+        "Authorization": `Bearer ${apiKey}`,
+        "X-User-ID": userId
+      };
+      let attempts = 0;
+      const maxAttempts = 10; // 10 attempts x 3 seconds = 30 seconds max
+      
+      while (attempts < maxAttempts) {
+        const response = await fetch(jobUrl, { headers });
+        const jobData = await response.json();
+        console.log(`Job poll attempt ${attempts + 1}:`, jobData);
+        
+        if (jobData.status === "completed" && jobData.audioUrl) {
+          return jobData.audioUrl;
+        } else if (jobData.status === "failed") {
+          throw new Error("Job failed on the server: " + JSON.stringify(jobData));
+        }
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        attempts++;
+      }
+      throw new Error("Timeout waiting for job completion.");
+    }
+    
+    function playAudio(audioUrl) {
+      console.log("Playing audio from URL:", audioUrl);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+  </script>
 </body>
 </html>
