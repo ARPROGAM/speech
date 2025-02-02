@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Uzbek Audio Player</title>
+    <style>
+         body { font-family: sans-serif; margin: 20px; }
+        button, select { padding: 10px; margin-right: 5px;}
+		#output {
+			margin-top:10px;
+		}
+    </style>
+</head>
+<body>
+    <h1>Simple Uzbek Audio Player</h1>
+    <p>This page provides a simplified player using pre-rendered mp3 file.</p>
+
+	<label for="voices">Select Voice:</label>
+    <select id="voices"></select>
+
+    <br>
+	<br>
+     <audio id="audioOutput" controls></audio>
+	 <p id="output"></p>
+    <script>
+        const audioOutput = document.getElementById('audioOutput');
+		const voicesDropdown = document.getElementById('voices');
+		const outputMessage = document.getElementById("output")
+
+
+         const voices = [
+				{
+					value: 'uz-UZ-MadinaNeural',
+					name : 'Madina',
+					sample: 'https://media.play.ht/voice-samples/uz-UZ-MadinaNeural.mp3',
+					lang : 'uz-UZ'
+				},
+				{
+					value: 'uz-UZ-SardorNeural',
+					name:'Sardor',
+					sample: 'https://media.play.ht/voice-samples/uz-UZ-SardorNeural.mp3',
+					lang : 'uz-UZ'
+				}
+			]
+
+
+		function populateVoices(){
+            voicesDropdown.innerHTML = '';
+			voices.forEach(voice => {
+				  if(voice.lang == 'uz-UZ'){
+                    const option = document.createElement('option');
+                    option.value = voice.value;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voicesDropdown.appendChild(option);
+				 }
+                });
+		}
+
+
+		populateVoices();
+
+		voicesDropdown.addEventListener('change', (e) => {
+		   outputMessage.innerHTML =""
+		   const selectedVoiceValue = voicesDropdown.value
+		   const selectedVoice = voices.find((voice)=> voice.value == selectedVoiceValue);
+           audioOutput.src = selectedVoice.sample;
+		   outputMessage.innerHTML = `Playing audio for ${selectedVoice.name}`
+		   audioOutput.play();
+        })
+    </script>
+</body>
+</html>
